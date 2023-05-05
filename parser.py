@@ -34,6 +34,14 @@ def structDef():
                 if consume("RACC"):
                     if consume("SEMICOLON"):
                         return True
+                    else:
+                        tkerr("lipseste ; dupa } in definitia de structura")
+                else:
+                    tkerr("lipseste } in definitia de structura")
+            else:
+                tkerr("lipseste { in definitia de structura")
+        else:
+            tkerr("lipseste numele structurii")
     iTk = start
     return False
 
@@ -118,32 +126,154 @@ def exprCast():
     iTk = start
     return False
 
-#exprOr: exprOr OR exprAnd | exprAnd
-#A: A α1 | … | A αm | β1 | … | β
-#A = exprOr
-#α1 = OR exprAnd
-#β1 = exprAnd
+#EprPostfix: ExprPrimary exprPostfixPrim
+def exprPostfix():
+    global iTk
+    start = iTk
+    if exprPrimary():
+        if exprPostfixPrim():
+            return True
+    iTk = start
+    return False
 
-#A: β1 A’ | … | βn A’
-#EprOr: ExprAnd exprOrPrim
+#ExprPostfixPrim: LBRACKET expr RBRACKET ExprPostfixPrim | DOT ID ExprPostfixPrim | ε
+def exprPostfixPrim():
+    if consume("LBRACKET"):
+        if expr():
+            if consume("RBRACKET"):
+                if exprPostfixPrim():
+                    return True
+    if consume("DOT"):
+        if consume("ID"):
+            if exprPostfixPrim():
+                return True
+    return True
 
-#A’: α1 A’ | … | αm A’ | ε (ε -> alternativa vida)
-#ExprOrPrim: OR exprAnd ExprOrPrim | ε
-#ExprOrPrim: (OR exprAnd ExprOrPrim)*
+
+#exprUnary: ( SUB | NOT ) exprUnary | exprPostfix
+def exprUnary():
+    global iTk
+    start = iTk
+    if consume("SUB") or consume("NOT"):
+        if exprUnary():
+            return True
+    if exprPostfix():
+        return True
+    iTk = start
+    return False
+
+#ExprUnaryPrim: ( SUB | NOT ) exprUnary ExprUnaryPrim | ε
+def exprUnaryPrim():
+    if consume("SUB") or consume("NOT"):
+        if exprUnary():
+            if exprUnaryPrim():
+                return True
+    return True
 
 
-# exprAnd: exprAnd AND exprEq | exprEq
-#A = exprAnd
-#α1 = AND exprEq
-#β1 = exprEq
+#EprMul: ExprCast exprMulPrim
+def exprMul():
+    global iTk
+    start = iTk
+    if exprCast():
+        if exprMulPrim():
+            return True
+    iTk = start
+    return False
 
-#A: β1 A’ | … | βn A’
+#ExprMulPrim: ( MUL | DIV ) exprCast ExprMulPrim | ε
+def exprMulPrim():
+    if consume("MUL") or consume("DIV"):
+        if exprCast():
+            if exprMulPrim():
+                return True
+    return True
+
+
+#EprAdd: ExprMul exprAddPrim
+def exprAdd():
+    global iTk
+    start = iTk
+    if exprMul():
+        if exprAddPrim():
+            return True
+    iTk = start
+    return False
+
+#ExprAddPrim: ( ADD | SUB ) exprMul ExprAddPrim | ε
+def exprAddPrim():
+    if consume("ADD") or consume("SUB"):
+        if exprMul():
+            if exprAddPrim():
+                return True
+    return True
+
+
+
+#EprRel: ExprAdd exprRelPrim
+def exprRel():
+    global iTk
+    start = iTk
+    if exprAdd():
+        if exprRelPrim():
+            return True
+    iTk = start
+    return False
+
+#ExprRelPrim: ( LESS | LESSEQ | GREATER | GREATEREQ ) exprAdd ExprRelPrim | ε
+def exprRelPrim():
+    if consume("LESS") or consume("LESSEQ") or consume("GREATER") or consume("GREATEREQ"):
+        if exprAdd():
+            if exprRelPrim():
+                return True
+    return True
+
+
+#EprEq: ExprRel exprEqPrim
+def exprEq():
+    global iTk
+    start = iTk
+    if exprRel():
+        if exprEqPrim():
+            return True
+    iTk = start
+    return False
+
+# exprEqPrim: ( EQUAL | NOTEQ ) exprRel exprEqPrim | ε
+def exprEqPrim():
+    global iTk
+    start = iTk
+    if consume("EQUAL"):
+        if exprRel():
+            if exprEqPrim():
+                return True
+    if consume("NOTEQ"):
+        if exprRel():
+            if exprEqPrim():
+                return True
+    iTk = start
+    return True
+
 #EprAnd: ExprEq exprAndPrim
-
-#A’: α1 A’ | … | αm A’ | ε (ε -> alternativa vida)
-#ExprAndPrim: AND exprEq ExprAndPrim | ε
-#ExprAndPrim: (AND exprEq ExprAndPrim)*
 def exprAnd():
+    global iTk
+    start = iTk
+    if exprEq():
+        if exprAndPrim():
+            return True
+    iTk = start
+    return False
+
+#ExprAndPrim: AND exprEq ExprAndPrim | ε
+def exprAndPrim():
+    global iTk
+    start = iTk
+    if consume("AND"):
+        if exprEq():
+            if exprAndPrim():
+                return True
+    iTk = start
+    return True  # epsilon
 
 # ExprOrPrim: OR exprAnd ExprOrPrim | ε
 def exprOrPrim():
@@ -184,6 +314,10 @@ def varDef():
                 pass
             if consume("SEMICOLON"):
                 return True
+            else:
+                tkerr("lipseste ; dupa declararea variabilei")
+        else:
+            tkerr("lipseste numele variabilei")
     iTk = start
     return False
 
@@ -207,8 +341,8 @@ def fnDef():
         pass
     elif consume("VOID"):
         pass
-    else:
-        tkerr("lipseste tipul de return al functiei") # de verificat daca e corecta
+    # else:
+        # tkerr("lipseste tipul de return al functiei") # de verificat daca e corecta
     if consume("ID"):
         if consume("LPAR"):
             if fnParam():
@@ -324,6 +458,8 @@ def unit():
             break
     if consume("END"):
         return True
+    else:
+        tkerr("programul inexistent")
     return False
 
 def parse(tokensList):
