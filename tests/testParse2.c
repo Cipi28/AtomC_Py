@@ -1,4 +1,11 @@
-struct MyStructure {   // Structure declaration
-  int myNums;           // Member (int variable)
-  char myLetter;       // Member (char variable)
-};
+int function (int a, int b)
+{
+    if(a > 0)
+    {
+        return a;
+    }
+    else
+    {
+        return b;
+    }
+}

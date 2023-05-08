@@ -53,8 +53,23 @@ def exprOr():
     if exprAnd():
         if exprOrPrim():
             return True
+        else:
+            tkerr("lipseste expresia dupa AND")
     iTk = start
     return False
+
+# ExprOrPrim: OR exprAnd ExprOrPrim | ε
+def exprOrPrim():
+    global iTk
+    start = iTk
+    if consume("OR"):
+        if exprAnd():
+            if exprOrPrim():
+                return True
+        else:
+            tkerr("lipseste expresia dupa OR")
+    iTk = start
+    return True  # epsilon
 
 # exprPrimary: ID ( LPAR ( expr ( COMMA expr )* )? RPAR )? | INT | DOUBLE | CHAR | STRING | LPAR expr RPAR
 def exprPrimary():
@@ -275,16 +290,7 @@ def exprAndPrim():
     iTk = start
     return True  # epsilon
 
-# ExprOrPrim: OR exprAnd ExprOrPrim | ε
-def exprOrPrim():
-    global iTk
-    start = iTk
-    if consume("OR"):
-        if exprAnd():
-            if exprOrPrim():
-                return True
-    iTk = start
-    return True  # epsilon
+
 
 # typeBase: TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID
 def typeBase():
@@ -330,6 +336,8 @@ def arrayDecl():
             pass
         if consume("RBRACKET"):
             return True
+        else:
+            tkerr("lipseste ] dupa declararea vectorului")
     iTk = start
     return False
 
@@ -337,26 +345,33 @@ def arrayDecl():
 def fnDef():
     global iTk
     start = iTk
-    if typeBase():
-        pass
-    elif consume("VOID"):
-        pass
+    if typeBase() or consume("VOID"):
     # else:
         # tkerr("lipseste tipul de return al functiei") # de verificat daca e corecta
-    if consume("ID"):
-        if consume("LPAR"):
-            if fnParam():
-                while True:
-                    if consume("COMMA"):
-                        if fnParam():
-                            pass
+        if consume("ID"):
+            if consume("LPAR"):
+
+                if fnParam():
+                    while True:
+                        if consume("COMMA"):
+                            if fnParam():
+                                pass
+                            else:
+                                tkerr("parametru functiei invalid sau lipseste dupa ,")
+                                break # eroare
                         else:
                             break # eroare
+                if consume("RPAR"):
+                    if stmCompound():
+                        return True
                     else:
-                        break # eroare
-            if consume("RPAR"):
-                if stmCompound():
-                    return True
+                        tkerr("lipseste corpul functiei")
+                else:
+                    tkerr("lipseste ) dupa declararea functiei")
+            else:
+                tkerr("lipseste ( dupa numele functiei")
+        else:
+            tkerr("lipseste numele functiei")
     iTk = start
     return False
 
@@ -369,6 +384,8 @@ def fnParam():
             if arrayDecl():
                 pass
             return True
+        else:
+            tkerr("lipseste numele parametrului")
     iTk = start
     return False
 
@@ -387,21 +404,42 @@ def stm():
                             if stm():
                                 pass
                             else:
-                                tkerr("something went wrong")
+                                tkerr("lipseste corpul else-ului")
                         return True
+                    else:
+                        tkerr("lipseste corpul if-ului")
+                else:
+                    tkerr("lipseste ) dupa conditia if-ului")
+            else:
+                tkerr("conditia if-ului lipseste sau nu este corecta")
+        else:
+            tkerr("lipseste ( dupa if")
+
     if consume("WHILE"):
+        print("while")
         if consume("LPAR"):
             if expr():
                 if consume("RPAR"):
                     if stm():
                         return True
+                    else:
+                        tkerr("lipseste corpul while-ului")
+                else:
+                    tkerr("lipseste ) dupa conditia while-ului")
+            else:
+                tkerr("conditia while-ului lipseste sau nu este corecta")
+        else:
+            tkerr("lipseste ( dupa while")
     if consume("RETURN"):
         if expr():
             pass
         if consume("SEMICOLON"):
             return True
+        else:
+            tkerr("lipseste ; de la return sau expresia returnata este invalida")
     if expr():
-        pass
+        if not consume("SEMICOLON"):
+            tkerr("lipseste ; dupa expresie")
     if consume("SEMICOLON"):
         return True
     iTk = start
@@ -421,6 +459,8 @@ def stmCompound():
                 break
         if consume("RACC"):
             return True
+        else:
+            tkerr("lipseste } dupa corpul functiei")
     iTk = start
     return False
 
@@ -441,6 +481,11 @@ def exprAssign():
         if consume("ASSIGN"):
             if exprAssign():
                 return True
+            else:
+                tkerr("lipseste expresia dupa =")
+    iTk = start
+    if exprOr():
+        return True
     iTk = start
     return False
 
