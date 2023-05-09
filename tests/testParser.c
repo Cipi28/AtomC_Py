@@ -2,7 +2,7 @@ struct Pt{
 	int x;
 	int y;
 	};
-struct Pt points[10];
+//struct Pt points[10];
 
 double max(double a,double b){
 	if(a>b)return a;
@@ -12,7 +12,7 @@ double max(double a,double b){
 int len(char s[]){
 	int i;
 	i=0;
-	while(s[i])i=i+1;
+	while(s[i ])i=i+1;
 	return i;
 	}
 
