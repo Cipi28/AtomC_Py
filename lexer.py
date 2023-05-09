@@ -36,6 +36,7 @@ def tokenize(pch):
                 index += 2
             else:
                 index += 1
+            line += 1
         elif pch[index:index + 2] == "//":
             index += 2
             while pch[index] not in "\n\r\0":

@@ -54,7 +54,7 @@ def exprOr():
         if exprOrPrim():
             return True
         else:
-            tkerr("lipseste expresia dupa AND")
+            tkerr("lipseste OR dupa expresia AND")
     iTk = start
     return False
 
@@ -83,14 +83,14 @@ def exprPrimary():
                         if expr():
                             pass
                         else:
-                            # semnalat eroare
+                            tkerr("lipseste expresia dupa ,")
                             break
                     else:
                         break
             if consume("RPAR"):
-                    return True
+                return True
             else:
-                tkerr("lipseste expresia")
+                tkerr("lipseste ) dupa apelul de functie")
         else:
             return True
     if consume("INT"):
@@ -105,6 +105,10 @@ def exprPrimary():
         if expr():
             if consume("RPAR"):
                 return True
+            else:
+                tkerr("lipseste ) dupa expresia din paranteze")
+        else:
+            tkerr("lipseste expresia din paranteze in expresia primara")
     iTk = start
     return False
 
@@ -116,9 +120,13 @@ def exprUnary():
     if consume("SUB"):
         if exprUnary():
             return True
+        else:
+            tkerr("lipseste expresia dupa -")
     if consume("NOT"):
         if exprUnary():
             return True
+        else:
+            tkerr("lipseste expresia dupa !")
     if exprPostfix():
         return True
     iTk = start
@@ -136,6 +144,12 @@ def exprCast():
             if consume("RPAR"):
                 if exprCast():
                     return True
+                else:
+                    tkerr("lipseste expresia dupa ) in expresia de cast")
+            else:
+                tkerr("lipseste ) in expresia de cast")
+        else:
+            tkerr("lipseste tipul in expresia de cast")
     if exprUnary():
         return True
     iTk = start
@@ -148,6 +162,8 @@ def exprPostfix():
     if exprPrimary():
         if exprPostfixPrim():
             return True
+        else:
+            tkerr("lipseste expresia de tip postfix dupa expresia primara")
     iTk = start
     return False
 
@@ -158,10 +174,16 @@ def exprPostfixPrim():
             if consume("RBRACKET"):
                 if exprPostfixPrim():
                     return True
+            else:
+                tkerr("lipseste ] in expresia de tip postfix")
+        else:
+            tkerr("lipseste expresia intre [] in expresia de tip postfix")
     if consume("DOT"):
         if consume("ID"):
             if exprPostfixPrim():
                 return True
+        else:
+            tkerr("lipseste numele campului dupa . in expresia de tip postfix")
     return True
 
 
@@ -193,6 +215,8 @@ def exprMul():
     if exprCast():
         if exprMulPrim():
             return True
+        else:
+            tkerr("lipseste MUL|DIV dupa expresia CAST")
     iTk = start
     return False
 
@@ -202,6 +226,8 @@ def exprMulPrim():
         if exprCast():
             if exprMulPrim():
                 return True
+        else:
+            tkerr("lipseste expresia dupa MUL|DIV")
     return True
 
 
@@ -212,6 +238,8 @@ def exprAdd():
     if exprMul():
         if exprAddPrim():
             return True
+        else:
+            tkerr("lipseste ADD|SUB dupa expresia MUL|DIV")
     iTk = start
     return False
 
@@ -221,6 +249,8 @@ def exprAddPrim():
         if exprMul():
             if exprAddPrim():
                 return True
+        else:
+            tkerr("lipseste expresia dupa ADD|SUB")
     return True
 
 
@@ -232,6 +262,8 @@ def exprRel():
     if exprAdd():
         if exprRelPrim():
             return True
+        else:
+            tkerr("lipseste LESS|LESSEQ|GREATER|GREATEREQ dupa expresia ADD | SUB")
     iTk = start
     return False
 
@@ -241,6 +273,8 @@ def exprRelPrim():
         if exprAdd():
             if exprRelPrim():
                 return True
+        else:
+            tkerr("lipseste expresia dupa LESS|LESSEQ|GREATER|GREATEREQ")
     return True
 
 
@@ -251,6 +285,8 @@ def exprEq():
     if exprRel():
         if exprEqPrim():
             return True
+        else:
+            tkerr("lipseste EQUAL|NOT EQUAL dupa expresia RELATIONAL")
     iTk = start
     return False
 
@@ -262,10 +298,14 @@ def exprEqPrim():
         if exprRel():
             if exprEqPrim():
                 return True
+        else:
+            tkerr("lipseste expresia dupa EQUAL")
     if consume("NOTEQ"):
         if exprRel():
             if exprEqPrim():
                 return True
+        else:
+            tkerr("lipseste expresia dupa NOT EQUAL")
     iTk = start
     return True
 
@@ -276,6 +316,8 @@ def exprAnd():
     if exprEq():
         if exprAndPrim():
             return True
+        else:
+            tkerr("lipseste AND dupa expresia EQUAL | NOT EQUAL")
     iTk = start
     return False
 
@@ -287,6 +329,8 @@ def exprAndPrim():
         if exprEq():
             if exprAndPrim():
                 return True
+        else:
+            tkerr("lipseste expresia dupa AND")
     iTk = start
     return True  # epsilon
 
@@ -390,11 +434,13 @@ def fnParam():
     return False
 
 # stm: stmCompound | IF LPAR expr RPAR stm ( ELSE stm )? | WHILE LPAR expr RPAR stm | RETURN expr? SEMICOLON | expr? SEMICOLON
-def stm():
+def stm(needStmCompound = False):
     global iTk
     start = iTk
     if stmCompound():
         return True
+    elif needStmCompound:
+        tkerr("corpul necesar functiei lipseste sau este incorect")
     if consume("IF"):
         if consume("LPAR"):
             if expr():
@@ -416,14 +462,13 @@ def stm():
             tkerr("lipseste ( dupa if")
 
     if consume("WHILE"):
-        print("while")
         if consume("LPAR"):
             if expr():
                 if consume("RPAR"):
-                    if stm():
+                    if stm(True):
                         return True
                     else:
-                        tkerr("lipseste corpul while-ului")
+                        tkerr("lipseste sau e definit incorect corpul while-ului")
                 else:
                     tkerr("lipseste ) dupa conditia while-ului")
             else:
@@ -438,7 +483,9 @@ def stm():
         else:
             tkerr("lipseste ; de la return sau expresia returnata este invalida")
     if expr():
-        if not consume("SEMICOLON"):
+        if consume("SEMICOLON"):
+            return True
+        else:
             tkerr("lipseste ; dupa expresie")
     if consume("SEMICOLON"):
         return True
@@ -460,7 +507,7 @@ def stmCompound():
         if consume("RACC"):
             return True
         else:
-            tkerr("lipseste } dupa corpul functiei")
+            tkerr("lipseste } dupa corpul functiei sau stuctura ori definitie invalida")
     iTk = start
     return False
 

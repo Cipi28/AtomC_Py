@@ -1,11 +1,6 @@
-int function (int a, int b)
-{
-    if(a > 0)
-    {
-        return a;
-    }
-    else
-    {
-        return b;
-    }
-}
+struct Pt{
+	int x;
+	int y;
+	};
+
+struct Pt points[10];
